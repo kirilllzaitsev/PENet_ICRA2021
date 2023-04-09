@@ -1,7 +1,8 @@
 import torch
 import torch.nn as nn
 
-loss_names = ['l1', 'l2']
+loss_names = ["l1", "l2"]
+
 
 class MaskedMSELoss(nn.Module):
     def __init__(self):

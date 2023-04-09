@@ -4,6 +4,7 @@ import math
 import random
 
 from PIL import Image, ImageOps, ImageEnhance
+
 try:
     import accimage
 except ImportError:
@@ -47,7 +48,7 @@ def adjust_brightness(img, brightness_factor):
         PIL Image: Brightness adjusted image.
     """
     if not _is_pil_image(img):
-        raise TypeError('img should be PIL Image. Got {}'.format(type(img)))
+        raise TypeError("img should be PIL Image. Got {}".format(type(img)))
 
     enhancer = ImageEnhance.Brightness(img)
     img = enhancer.enhance(brightness_factor)
@@ -67,7 +68,7 @@ def adjust_contrast(img, contrast_factor):
         PIL Image: Contrast adjusted image.
     """
     if not _is_pil_image(img):
-        raise TypeError('img should be PIL Image. Got {}'.format(type(img)))
+        raise TypeError("img should be PIL Image. Got {}".format(type(img)))
 
     enhancer = ImageEnhance.Contrast(img)
     img = enhancer.enhance(contrast_factor)
@@ -87,7 +88,7 @@ def adjust_saturation(img, saturation_factor):
         PIL Image: Saturation adjusted image.
     """
     if not _is_pil_image(img):
-        raise TypeError('img should be PIL Image. Got {}'.format(type(img)))
+        raise TypeError("img should be PIL Image. Got {}".format(type(img)))
 
     enhancer = ImageEnhance.Color(img)
     img = enhancer.enhance(saturation_factor)
@@ -118,25 +119,24 @@ def adjust_hue(img, hue_factor):
         PIL Image: Hue adjusted image.
     """
     if not (-0.5 <= hue_factor <= 0.5):
-        raise ValueError(
-            'hue_factor is not in [-0.5, 0.5].'.format(hue_factor))
+        raise ValueError("hue_factor is not in [-0.5, 0.5].".format(hue_factor))
 
     if not _is_pil_image(img):
-        raise TypeError('img should be PIL Image. Got {}'.format(type(img)))
+        raise TypeError("img should be PIL Image. Got {}".format(type(img)))
 
     input_mode = img.mode
-    if input_mode in {'L', '1', 'I', 'F'}:
+    if input_mode in {"L", "1", "I", "F"}:
         return img
 
-    h, s, v = img.convert('HSV').split()
+    h, s, v = img.convert("HSV").split()
 
     np_h = np.array(h, dtype=np.uint8)
     # uint8 addition take cares of rotation across boundaries
-    with np.errstate(over='ignore'):
+    with np.errstate(over="ignore"):
         np_h += np.uint8(hue_factor * 255)
-    h = Image.fromarray(np_h, 'L')
+    h = Image.fromarray(np_h, "L")
 
-    img = Image.merge('HSV', (h, s, v)).convert(input_mode)
+    img = Image.merge("HSV", (h, s, v)).convert(input_mode)
     return img
 
 
@@ -158,19 +158,19 @@ def adjust_gamma(img, gamma, gain=1):
         gain (float): The constant multiplier.
     """
     if not _is_pil_image(img):
-        raise TypeError('img should be PIL Image. Got {}'.format(type(img)))
+        raise TypeError("img should be PIL Image. Got {}".format(type(img)))
 
     if gamma < 0:
-        raise ValueError('Gamma should be a non-negative real number')
+        raise ValueError("Gamma should be a non-negative real number")
 
     input_mode = img.mode
-    img = img.convert('RGB')
+    img = img.convert("RGB")
 
     np_img = np.array(img, dtype=np.float32)
-    np_img = 255 * gain * ((np_img / 255)**gamma)
+    np_img = 255 * gain * ((np_img / 255) ** gamma)
     np_img = np.uint8(np.clip(np_img, 0, 255))
 
-    img = Image.fromarray(np_img, 'RGB').convert(input_mode)
+    img = Image.fromarray(np_img, "RGB").convert(input_mode)
     return img
 
 
@@ -186,6 +186,7 @@ class Compose(object):
         >>>     transforms.ToTensor(),
         >>> ])
     """
+
     def __init__(self, transforms):
         self.transforms = transforms
 
@@ -200,6 +201,7 @@ class ToTensor(object):
 
     Converts a numpy.ndarray (H x W x C) to a torch.FloatTensor of shape (C x H x W).
     """
+
     def __call__(self, img):
         """Convert a ``numpy.ndarray`` to tensor.
 
@@ -210,7 +212,7 @@ class ToTensor(object):
             Tensor: Converted image.
         """
         if not (_is_numpy_image(img)):
-            raise TypeError('img should be ndarray. Got {}'.format(type(img)))
+            raise TypeError("img should be ndarray. Got {}".format(type(img)))
 
         if isinstance(img, np.ndarray):
             # handle numpy array
@@ -220,8 +222,10 @@ class ToTensor(object):
                 img = torch.from_numpy(img.copy())
             else:
                 raise RuntimeError(
-                    'img should be ndarray with 2 or 3 dimensions. Got {}'.
-                    format(img.ndim))
+                    "img should be ndarray with 2 or 3 dimensions. Got {}".format(
+                        img.ndim
+                    )
+                )
 
             return img
 
@@ -236,6 +240,7 @@ class NormalizeNumpyArray(object):
         mean (sequence): Sequence of means for each channel.
         std (sequence): Sequence of standard deviations for each channel.
     """
+
     def __init__(self, mean, std):
         self.mean = mean
         self.std = std
@@ -249,7 +254,7 @@ class NormalizeNumpyArray(object):
             Tensor: Normalized image.
         """
         if not (_is_numpy_image(img)):
-            raise TypeError('img should be ndarray. Got {}'.format(type(img)))
+            raise TypeError("img should be ndarray. Got {}".format(type(img)))
         # TODO: make efficient
         print(img.shape)
         for i in range(3):
@@ -267,6 +272,7 @@ class NormalizeTensor(object):
         mean (sequence): Sequence of means for each channel.
         std (sequence): Sequence of standard deviations for each channel.
     """
+
     def __init__(self, mean, std):
         self.mean = mean
         self.std = std
@@ -280,7 +286,7 @@ class NormalizeTensor(object):
             Tensor: Normalized Tensor image.
         """
         if not _is_tensor_image(tensor):
-            raise TypeError('tensor is not a torch image.')
+            raise TypeError("tensor is not a torch image.")
         # TODO: make efficient
         for t, m, s in zip(tensor, self.mean, self.std):
             t.sub_(m).div_(s)
@@ -293,6 +299,7 @@ class Rotate(object):
     Args:
         angle (float): The rotation angle in degrees.
     """
+
     def __init__(self, angle):
         self.angle = angle
 
@@ -320,7 +327,8 @@ class Resize(object):
         interpolation (int, optional): Desired interpolation. Default is
             ``PIL.Image.BILINEAR``
     """
-    def __init__(self, size, interpolation='nearest'):
+
+    def __init__(self, size, interpolation="nearest"):
         assert isinstance(size, float)
         self.size = size
         self.interpolation = interpolation
@@ -338,8 +346,8 @@ class Resize(object):
             return skimage.transform.rescale(img, self.size, order=0)
         else:
             RuntimeError(
-                'img should be ndarray with 2 or 3 dimensions. Got {}'.format(
-                    img.ndim))
+                "img should be ndarray with 2 or 3 dimensions. Got {}".format(img.ndim)
+            )
 
 
 class CenterCrop(object):
@@ -350,6 +358,7 @@ class CenterCrop(object):
             int instead of sequence like (h, w), a square crop (size, size) is
             made.
     """
+
     def __init__(self, size):
         if isinstance(size, numbers.Number):
             self.size = (int(size), int(size))
@@ -370,8 +379,8 @@ class CenterCrop(object):
         h = img.shape[0]
         w = img.shape[1]
         th, tw = output_size
-        i = int(round((h - th) / 2.))
-        j = int(round((w - tw) / 2.))
+        i = int(round((h - th) / 2.0))
+        j = int(round((w - tw) / 2.0))
 
         # # randomized cropping
         # i = np.random.randint(i-3, i+4)
@@ -395,15 +404,15 @@ class CenterCrop(object):
         w: Width of the cropped image.
         """
         if not (_is_numpy_image(img)):
-            raise TypeError('img should be ndarray. Got {}'.format(type(img)))
+            raise TypeError("img should be ndarray. Got {}".format(type(img)))
         if img.ndim == 3:
-            return img[i:i + h, j:j + w, :]
+            return img[i : i + h, j : j + w, :]
         elif img.ndim == 2:
-            return img[i:i + h, j:j + w]
+            return img[i : i + h, j : j + w]
         else:
             raise RuntimeError(
-                'img should be ndarray with 2 or 3 dimensions. Got {}'.format(
-                    img.ndim))
+                "img should be ndarray with 2 or 3 dimensions. Got {}".format(img.ndim)
+            )
 
 
 class BottomCrop(object):
@@ -414,6 +423,7 @@ class BottomCrop(object):
             int instead of sequence like (h, w), a square crop (size, size) is
             made.
     """
+
     def __init__(self, size):
         if isinstance(size, numbers.Number):
             self.size = (int(size), int(size))
@@ -435,7 +445,7 @@ class BottomCrop(object):
         w = img.shape[1]
         th, tw = output_size
         i = h - th
-        j = int(round((w - tw) / 2.))
+        j = int(round((w - tw) / 2.0))
 
         # randomized left and right cropping
         # i = np.random.randint(i-3, i+4)
@@ -459,15 +469,15 @@ class BottomCrop(object):
         w: Width of the cropped image.
         """
         if not (_is_numpy_image(img)):
-            raise TypeError('img should be ndarray. Got {}'.format(type(img)))
+            raise TypeError("img should be ndarray. Got {}".format(type(img)))
         if img.ndim == 3:
-            return img[i:i + h, j:j + w, :]
+            return img[i : i + h, j : j + w, :]
         elif img.ndim == 2:
-            return img[i:i + h, j:j + w]
+            return img[i : i + h, j : j + w]
         else:
             raise RuntimeError(
-                'img should be ndarray with 2 or 3 dimensions. Got {}'.format(
-                    img.ndim))
+                "img should be ndarray with 2 or 3 dimensions. Got {}".format(img.ndim)
+            )
 
 
 class RandomCrop(object):
@@ -478,6 +488,7 @@ class RandomCrop(object):
             int instead of sequence like (h, w), a square crop (size, size) is
             made.
     """
+
     def __init__(self, size):
         if isinstance(size, numbers.Number):
             self.size = (int(size), int(size))
@@ -500,8 +511,8 @@ class RandomCrop(object):
         th, tw = output_size
 
         # randomized left and right cropping
-        i = np.random.randint(0, h-th+1)
-        j = np.random.randint(0, w-tw+1)
+        i = np.random.randint(0, h - th + 1)
+        j = np.random.randint(0, w - tw + 1)
 
         return i, j, th, tw
 
@@ -521,15 +532,15 @@ class RandomCrop(object):
         w: Width of the cropped image.
         """
         if not (_is_numpy_image(img)):
-            raise TypeError('img should be ndarray. Got {}'.format(type(img)))
+            raise TypeError("img should be ndarray. Got {}".format(type(img)))
         if img.ndim == 3:
-            return img[i:i + h, j:j + w, :]
+            return img[i : i + h, j : j + w, :]
         elif img.ndim == 2:
-            return img[i:i + h, j:j + w]
+            return img[i : i + h, j : j + w]
         else:
             raise RuntimeError(
-                'img should be ndarray with 2 or 3 dimensions. Got {}'.format(
-                    img.ndim))
+                "img should be ndarray with 2 or 3 dimensions. Got {}".format(img.ndim)
+            )
 
 
 class Crop(object):
@@ -540,6 +551,7 @@ class Crop(object):
             int instead of sequence like (h, w), a square crop (size, size) is
             made.
     """
+
     def __init__(self, crop):
         self.crop = crop
 
@@ -581,15 +593,15 @@ class Crop(object):
         w: Width of the cropped image.
         """
         if not (_is_numpy_image(img)):
-            raise TypeError('img should be ndarray. Got {}'.format(type(img)))
+            raise TypeError("img should be ndarray. Got {}".format(type(img)))
         if img.ndim == 3:
             return img[y_b:y_t, x_l:x_r, :]
         elif img.ndim == 2:
             return img[y_b:y_t, x_l:x_r]
         else:
             raise RuntimeError(
-                'img should be ndarray with 2 or 3 dimensions. Got {}'.format(
-                    img.ndim))
+                "img should be ndarray with 2 or 3 dimensions. Got {}".format(img.ndim)
+            )
 
 
 class Lambda(object):
@@ -598,6 +610,7 @@ class Lambda(object):
     Args:
         lambd (function): Lambda/function to be used for transform.
     """
+
     def __init__(self, lambd):
         assert isinstance(lambd, types.LambdaType)
         self.lambd = lambd
@@ -613,6 +626,7 @@ class HorizontalFlip(object):
         do_flip (boolean): whether or not do horizontal flip.
 
     """
+
     def __init__(self, do_flip):
         self.do_flip = do_flip
 
@@ -625,7 +639,7 @@ class HorizontalFlip(object):
             img (numpy.ndarray (C x H x W)): flipped image.
         """
         if not (_is_numpy_image(img)):
-            raise TypeError('img should be ndarray. Got {}'.format(type(img)))
+            raise TypeError("img should be ndarray. Got {}".format(type(img)))
 
         if self.do_flip:
             return np.fliplr(img)
@@ -646,13 +660,12 @@ class ColorJitter(object):
         hue(float): How much to jitter hue. hue_factor is chosen uniformly from
             [-hue, hue]. Should be >=0 and <= 0.5.
     """
+
     def __init__(self, brightness=0, contrast=0, saturation=0, hue=0):
         transforms = []
-        transforms.append(
-            Lambda(lambda img: adjust_brightness(img, brightness)))
+        transforms.append(Lambda(lambda img: adjust_brightness(img, brightness)))
         transforms.append(Lambda(lambda img: adjust_contrast(img, contrast)))
-        transforms.append(
-            Lambda(lambda img: adjust_saturation(img, saturation)))
+        transforms.append(Lambda(lambda img: adjust_saturation(img, saturation)))
         transforms.append(Lambda(lambda img: adjust_hue(img, hue)))
         np.random.shuffle(transforms)
         self.transform = Compose(transforms)
@@ -666,7 +679,7 @@ class ColorJitter(object):
             img (numpy.ndarray (C x H x W)): Color jittered image.
         """
         if not (_is_numpy_image(img)):
-            raise TypeError('img should be ndarray. Got {}'.format(type(img)))
+            raise TypeError("img should be ndarray. Got {}".format(type(img)))
 
         pil = Image.fromarray(img)
         return np.array(self.transform(pil))
